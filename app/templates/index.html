@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Scoring - Predicción ML</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 0.95em;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+            font-size: 0.95em;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1.1em;
+            transition: all 0.3s ease;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result-container {
+            margin-top: 30px;
+            padding: 25px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 15px;
+            display: none;
+        }
+
+        .result-container.show {
+            display: block;
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result-title {
+            font-size: 1.2em;
+            color: #333;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .score-display {
+            font-size: 3em;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+            color: #667eea;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .feature-item {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .feature-label {
+            font-size: 0.85em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .feature-value {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+            animation: slideIn 0.5s ease;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            font-size: 0.9em;
+            color: #555;
+        }
+
+        .api-link {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .api-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s ease;
+        }
+
+        .api-link a:hover {
+            color: #764ba2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Customer Scoring</h1>
+        <p class="subtitle">Predicción de Score usando Machine Learning</p>
+
+        <div class="info-box">
+            ℹ️ Ingresa el ID de un cliente para obtener su score predicho y características asociadas.
+        </div>
+
+        <form id="scoreForm">
+            <div class="form-group">
+                <label for="customerId">ID del Cliente</label>
+                <input 
+                    type="number" 
+                    id="customerId" 
+                    name="customerId" 
+                    placeholder="Ej: 12345" 
+                    required 
+                    min="1"
+                    step="1"
+                >
+            </div>
+
+            <button type="submit" class="btn" id="submitBtn">
+                Calcular Score
+            </button>
+        </form>
+
+        <div class="error-message" id="errorMessage"></div>
+
+        <div class="result-container" id="resultContainer">
+            <div class="result-title">📊 Resultados de la Predicción</div>
+            
+            <div class="score-display" id="scoreValue">--</div>
+            
+            <div class="features-grid">
+                <div class="feature-item">
+                    <div class="feature-label">Segmento</div>
+                    <div class="feature-value" id="segment">--</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-label">Antigüedad</div>
+                    <div class="feature-value" id="seniority">--</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-label">Transacciones/Mes</div>
+                    <div class="feature-value" id="transactions">--</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-label">Monto Promedio</div>
+                    <div class="feature-value" id="amount">--</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="api-link">
+            <a href="/docs" target="_blank">📖 Ver Documentación de la API</a>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('scoreForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const resultContainer = document.getElementById('resultContainer');
+        const errorMessage = document.getElementById('errorMessage');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const customerId = document.getElementById('customerId').value;
+            
+            // Limpiar mensajes previos
+            errorMessage.classList.remove('show');
+            resultContainer.classList.remove('show');
+            
+            // Mostrar loading
+            submitBtn.innerHTML = '<span class="loading"></span> Calculando...';
+            submitBtn.disabled = true;
+            
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        customer_id: parseInt(customerId)
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.detail || 'Error al realizar la predicción');
+                }
+                
+                // Mostrar resultados
+                document.getElementById('scoreValue').textContent = data.score_normalized.toFixed(2);
+                document.getElementById('segment').textContent = data.features.segment;
+                document.getElementById('seniority').textContent = data.features.seniority;
+                document.getElementById('transactions').textContent = data.features.monthly_transactions;
+                document.getElementById('amount').textContent = '$' + data.features.average_amount.toFixed(2);
+                
+                resultContainer.classList.add('show');
+                
+            } catch (error) {
+                errorMessage.textContent = '❌ ' + error.message;
+                errorMessage.classList.add('show');
+            } finally {
+                submitBtn.innerHTML = 'Calcular Score';
+                submitBtn.disabled = false;
+            }
+        });
+
+        // Validación en tiempo real
+        document.getElementById('customerId').addEventListener('input', (e) => {
+            if (e.target.value < 1) {
+                e.target.value = '';
+            }
+        });
+    </script>
+</body>
+</html>
